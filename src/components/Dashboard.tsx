@@ -1,7 +1,8 @@
 import React from 'react';
 import { TrendingUp, ShoppingBag, Users, Package, AlertTriangle, DollarSign } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { generateDailySalesData, todayStats, mockProducts } from '../utils/mockData';
+import { useApp } from '../context/AppContext';
+import { generateDailySalesData } from '../utils/mockData';
 
 const salesData = generateDailySalesData();
 
@@ -28,7 +29,23 @@ const hourlyData = [
 ];
 
 export default function Dashboard() {
-  const lowStockProducts = mockProducts.filter(product => product.stock <= product.minStock);
+  const { state } = useApp();
+  const { products, sales, customers } = state;
+
+  const lowStockProducts = products.filter(product => product.stock <= product.minStock);
+
+  // Calculate today's stats
+  const today = new Date();
+  const todaySales = sales.filter(sale => {
+    const saleDate = new Date(sale.timestamp);
+    return saleDate.toDateString() === today.toDateString();
+  });
+
+  const todayStats = {
+    totalSales: todaySales.reduce((sum, sale) => sum + sale.total, 0),
+    totalTransactions: todaySales.length,
+    averageTicket: todaySales.length > 0 ? todaySales.reduce((sum, sale) => sum + sale.total, 0) / todaySales.length : 0
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -48,7 +65,7 @@ export default function Dashboard() {
               </p>
               <p className="text-green-600 text-sm flex items-center gap-1 mt-1">
                 <TrendingUp className="w-4 h-4" />
-                +12.5% vs ontem
+                {todayStats.totalTransactions} transações
               </p>
             </div>
             <div className="bg-orange-100 p-3 rounded-lg">
@@ -62,9 +79,9 @@ export default function Dashboard() {
             <div>
               <p className="text-gray-600 text-sm font-medium">Transações</p>
               <p className="text-2xl font-bold text-gray-900">{todayStats.totalTransactions}</p>
-              <p className="text-green-600 text-sm flex items-center gap-1 mt-1">
-                <TrendingUp className="w-4 h-4" />
-                +8.2% vs ontem
+              <p className="text-blue-600 text-sm flex items-center gap-1 mt-1">
+                <ShoppingBag className="w-4 h-4" />
+                Hoje
               </p>
             </div>
             <div className="bg-blue-100 p-3 rounded-lg">
@@ -81,8 +98,8 @@ export default function Dashboard() {
                 R$ {todayStats.averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
               <p className="text-green-600 text-sm flex items-center gap-1 mt-1">
-                <TrendingUp className="w-4 h-4" />
-                +3.8% vs ontem
+                <Users className="w-4 h-4" />
+                {customers.length} clientes
               </p>
             </div>
             <div className="bg-green-100 p-3 rounded-lg">
@@ -95,7 +112,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Produtos Cadastrados</p>
-              <p className="text-2xl font-bold text-gray-900">{mockProducts.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{products.length}</p>
               <p className="text-orange-600 text-sm flex items-center gap-1 mt-1">
                 <AlertTriangle className="w-4 h-4" />
                 {lowStockProducts.length} em baixa

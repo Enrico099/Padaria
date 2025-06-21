@@ -1,191 +1,173 @@
 import React, { useState } from 'react';
-import { Users, Plus, Search, Phone, Mail, MapPin, Calendar } from 'lucide-react';
-import { mockCustomers } from '../utils/mockData';
-import { Customer } from '../types';
+import { useApp } from '../context/AppContext';
+import { SaleItem } from '../types';
 
-export default function Customers() {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
-  const [searchTerm, setSearchTerm] = useState('');
+function Sales() {
+  const { state, dispatch } = useApp();
+  const { products, customers } = state;
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone?.includes(searchTerm) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [cart, setCart] = useState<SaleItem[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<'dinheiro' | 'cartao' | 'pix'>('dinheiro');
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
+  const [customerMoney, setCustomerMoney] = useState<string>('');
+
+  // Função simples para gerar ID único
+  function generateId() {
+    return Math.random().toString(36).substring(2, 10);
+  }
+
+  const addToCart = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    const existingItem = cart.find(item => item.productId === productId);
+
+    if (existingItem) {
+      setCart(cart.map(item =>
+        item.productId === productId
+          ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.unitPrice }
+          : item
+      ));
+    } else {
+      setCart([
+        ...cart,
+        {
+          productId: product.id,
+          productName: product.name,
+          quantity: 1,
+          unitPrice: product.price,
+          total: product.price
+        }
+      ]);
+    }
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart(cart.filter(item => item.productId !== productId));
+  };
+
+  const getTotalAmount = () => {
+    return cart.reduce((sum, item) => sum + item.total, 0);
+  };
+
+  const getChange = () => {
+    const money = parseFloat(customerMoney);
+    return money > getTotalAmount() ? money - getTotalAmount() : 0;
+  };
+
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+
+    const sale = {
+      id: generateId(),
+      items: cart,
+      total: getTotalAmount(),
+      paymentMethod,
+      customerId: selectedCustomer || undefined,
+      timestamp: new Date().toISOString(),
+      cashierId: 'caixa1',
+    };
+
+    dispatch({ type: 'ADD_SALE', payload: sale });
+
+    setCart([]);
+    setPaymentMethod('dinheiro');
+    setSelectedCustomer(null);
+    setCustomerMoney('');
+  };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Clientes</h1>
-            <p className="text-gray-600">Gerencie seus clientes e histórico de compras</p>
-          </div>
-          <button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors shadow-lg">
-            <Plus className="w-5 h-5" />
-            Novo Cliente
-          </button>
-        </div>
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Nova Venda</h2>
 
-        <div className="relative">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar clientes por nome, telefone ou email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          />
+      <div className="mb-4">
+        <h3 className="font-semibold mb-2">Produtos</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {products.map(product => (
+            <button
+              key={product.id}
+              className="p-2 bg-green-100 rounded hover:bg-green-200"
+              onClick={() => addToCart(product.id)}
+            >
+              {product.name} - R${product.price.toFixed(2)}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{customers.length}</p>
-              <p className="text-gray-600 text-sm">Total de Clientes</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-green-100 p-3 rounded-lg">
-              <Calendar className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">12</p>
-              <p className="text-gray-600 text-sm">Novos este mês</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-purple-100 p-3 rounded-lg">
-              <Phone className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">89%</p>
-              <p className="text-gray-600 text-sm">Com telefone</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-orange-100 p-3 rounded-lg">
-              <Mail className="w-6 h-6 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">67%</p>
-              <p className="text-gray-600 text-sm">Com email</p>
-            </div>
-          </div>
-        </div>
+      <div className="mb-4">
+        <h3 className="font-semibold mb-2">Carrinho</h3>
+        {cart.length === 0 ? (
+          <p>Nenhum item no carrinho</p>
+        ) : (
+          <ul>
+            {cart.map(item => (
+              <li key={item.productId} className="flex justify-between mb-1">
+                {item.quantity}x {item.productName} - R${item.total.toFixed(2)}
+                <button
+                  onClick={() => removeFromCart(item.productId)}
+                  className="text-red-500 ml-2"
+                >
+                  Remover
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-2 font-bold">Total: R${getTotalAmount().toFixed(2)}</p>
       </div>
 
-      {/* Lista de Clientes */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Lista de Clientes</h2>
-        </div>
+      <div className="mb-4">
+        <h3 className="font-semibold mb-2">Forma de Pagamento</h3>
+        <select
+          value={paymentMethod}
+          onChange={(e) => setPaymentMethod(e.target.value as 'dinheiro' | 'cartao' | 'pix')}
+          className="p-2 border rounded w-full"
+        >
+          <option value="dinheiro">Dinheiro</option>
+          <option value="cartao">Cartão</option>
+          <option value="pix">PIX</option>
+        </select>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Cliente
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Contato
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Total Compras
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Última Compra
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredCustomers.map(customer => (
-                <tr key={customer.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{customer.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        Cliente desde {new Date(customer.createdAt).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="space-y-1">
-                      {customer.phone && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="w-4 h-4" />
-                          {customer.phone}
-                        </div>
-                      )}
-                      {customer.email && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail className="w-4 h-4" />
-                          {customer.email}
-                        </div>
-                      )}
-                      {customer.address && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="w-4 h-4" />
-                          {customer.address}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-lg font-semibold text-green-600">
-                      R$ {customer.totalPurchases.toFixed(2)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-gray-900">
-                      {customer.lastPurchase
-                        ? new Date(customer.lastPurchase).toLocaleDateString('pt-BR')
-                        : 'Nunca'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                        Ver Histórico
-                      </button>
-                      <button className="text-gray-600 hover:text-gray-800 text-sm font-medium">
-                        Editar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filteredCustomers.length === 0 && (
-          <div className="text-center py-12">
-            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum cliente encontrado</h3>
-            <p className="text-gray-600">Tente ajustar sua pesquisa ou adicione novos clientes</p>
+        {paymentMethod === 'dinheiro' && (
+          <div className="mt-2">
+            <label>Valor recebido:</label>
+            <input
+              type="number"
+              value={customerMoney}
+              onChange={(e) => setCustomerMoney(e.target.value)}
+              className="p-2 border rounded w-full"
+            />
+            <p className="mt-1">Troco: R${getChange().toFixed(2)}</p>
           </div>
         )}
       </div>
+
+      <div className="mb-4">
+        <h3 className="font-semibold mb-2">Cliente (opcional)</h3>
+        <select
+          value={selectedCustomer || ''}
+          onChange={(e) => setSelectedCustomer(e.target.value || null)}
+          className="p-2 border rounded w-full"
+        >
+          <option value="">Não especificar</option>
+          {customers.map(customer => (
+            <option key={customer.id} value={customer.id}>
+              {customer.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <button
+        onClick={handleCheckout}
+        disabled={cart.length === 0}
+        className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600"
+      >
+        Finalizar Venda
+      </button>
     </div>
   );
 }
+
+export default Sales;

@@ -1,5 +1,6 @@
 import { Product, Sale, Customer, DailySales } from '../types';
 
+// Produtos Mock
 export const mockProducts: Product[] = [
   {
     id: '1',
@@ -75,6 +76,10 @@ export const mockProducts: Product[] = [
   }
 ];
 
+// Exportando com o nome que o AppContext espera
+export const initialProducts = mockProducts;
+
+// Vendas Mock
 export const mockSales: Sale[] = [
   {
     id: '1',
@@ -89,6 +94,7 @@ export const mockSales: Sale[] = [
   }
 ];
 
+// Clientes Mock
 export const mockCustomers: Customer[] = [
   {
     id: '1',
@@ -101,6 +107,10 @@ export const mockCustomers: Customer[] = [
   }
 ];
 
+// Exportando com o nome que o AppContext espera
+export const initialCustomers = mockCustomers;
+
+// Função para gerar vendas diárias mock
 export const generateDailySalesData = (): DailySales[] => {
   const today = new Date();
   const data: DailySales[] = [];
@@ -124,6 +134,7 @@ export const generateDailySalesData = (): DailySales[] => {
   return data;
 };
 
+// Estatísticas de hoje
 export const todayStats = {
   totalSales: 1847.50,
   totalTransactions: 94,

@@ -72,6 +72,17 @@ export interface Customer {
   createdAt: string;
 }
 
+export interface AppState {
+  products: Product[];
+  sales: Sale[];
+  customers: Customer[];
+  currentUser: {
+    id: string;
+    name: string;
+    role: string;
+  };
+}
+
 export interface DailySales {
   date: string;
   totalSales: number;
@@ -81,4 +92,5 @@ export interface DailySales {
     quantity: number;
     revenue: number;
   }>;
+
 }

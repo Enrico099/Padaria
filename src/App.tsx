@@ -8,7 +8,7 @@ import Reports from './components/Reports';
 import Settings from './components/Settings';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
 
   const renderActiveComponent = () => {
     switch (activeTab) {
